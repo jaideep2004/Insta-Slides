@@ -42,7 +42,7 @@ Font: {{{font}}}
 
 Consider readability and visual appeal. The wrappedText must not exceed the image dimensions.
 
-Ensure the response is a valid JSON object.`, //Crucially, ask for a valid JSON object
+Ensure the response is a valid JSON object.`,
 });
 
 const autoAdjustTextFlow = ai.defineFlow(
@@ -52,6 +52,12 @@ const autoAdjustTextFlow = ai.defineFlow(
     outputSchema: AutoAdjustTextOutputSchema,
   },
   async input => {
+    if (!input.text) {
+      return {
+        fontSize: 16,
+        wrappedText: '',
+      }
+    }
     const {output} = await prompt(input);
     return output!;
   }

@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 import type { Settings, Slide } from '@/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -24,7 +24,7 @@ interface EditorPanelProps {
   settings: Settings;
   addSlide: () => void;
   removeSlide: (id: string) => void;
-  updateSlideText: (id: string, part: 'headline' | 'caption', text: string) => void;
+  updateSlideText: (id: string, part: 'headline' | 'caption' | 'footer', text: string) => void;
   setSettings: (settings: Settings | ((s: Settings) => Settings)) => void;
 }
 
@@ -75,13 +75,20 @@ export function EditorPanel({
 
   return (
     <Card className="h-full flex flex-col">
+       <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <SlidersHorizontal className="h-5 w-5" />
+          Customize
+        </CardTitle>
+      </CardHeader>
       <CardContent className="p-0 flex-grow">
         <Tabs defaultValue="slides" className="flex flex-col h-full">
-          <TabsList className="grid w-full grid-cols-5 rounded-none rounded-t-lg">
+          <TabsList className="grid w-full grid-cols-6 rounded-none">
             <TabsTrigger value="slides">Slides</TabsTrigger>
             <TabsTrigger value="background">Background</TabsTrigger>
             <TabsTrigger value="headline">Headline</TabsTrigger>
             <TabsTrigger value="caption">Caption</TabsTrigger>
+            <TabsTrigger value="footer">Footer</TabsTrigger>
             <TabsTrigger value="layout">Layout</TabsTrigger>
           </TabsList>
 
@@ -115,6 +122,12 @@ export function EditorPanel({
                           placeholder="Caption..."
                           value={slide.caption}
                           onChange={(e) => updateSlideText(slide.id, 'caption', e.target.value)}
+                        />
+                        <Input
+                          id={`footer-${slide.id}`}
+                          placeholder="Source..."
+                          value={slide.footer || ''}
+                          onChange={(e) => updateSlideText(slide.id, 'footer', e.target.value)}
                         />
                       </CardContent>
                     </Card>
@@ -218,6 +231,41 @@ export function EditorPanel({
                   <div className="grid gap-2">
                     <Label>Line Height: {settings.caption.lineHeight.toFixed(2)}</Label>
                     <Slider value={[settings.caption.lineHeight]} onValueChange={([v]) => handleSettingsChange('caption', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="footer">
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label>Font</Label>
+                    <Select value={settings.footer.font} onValueChange={(v) => handleSettingsChange('footer', 'font', v)}>
+                      <SelectTrigger><SelectValue/></SelectTrigger>
+                      <SelectContent>
+                        {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Color</Label>
+                    <Input type="color" value={settings.footer.color} onChange={(e) => handleSettingsChange('footer', 'color', e.target.value)} className='p-1 h-10 w-20' />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Alignment</Label>
+                    <Select value={settings.footer.alignment} onValueChange={(v) => handleSettingsChange('footer', 'alignment', v)}>
+                      <SelectTrigger><SelectValue/></SelectTrigger>
+                      <SelectContent>
+                        {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Letter Spacing: {settings.footer.letterSpacing.toFixed(2)}</Label>
+                    <Slider value={[settings.footer.letterSpacing]} onValueChange={([v]) => handleSettingsChange('footer', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Line Height: {settings.footer.lineHeight.toFixed(2)}</Label>
+                    <Slider value={[settings.footer.lineHeight]} onValueChange={([v]) => handleSettingsChange('footer', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
                   </div>
                 </div>
               </TabsContent>

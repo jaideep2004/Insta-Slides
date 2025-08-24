@@ -4,14 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Settings, Slide } from '@/types';
 import { EditorPanel } from './editor-panel';
 import { PreviewArea } from './preview-area';
-import { Presentation } from 'lucide-react';
-
-const createInitialSlide = (): Slide => ({
-  id: `slide-${Math.random()}`, // Temporary ID
-  headline: "Your headline goes here",
-  caption: "And your caption follows below. You can customize everything on the left!",
-  isLoading: false,
-});
+import { Presentation, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
 const initialSettings: Settings = {
   background: { type: 'color', value: '#FFFFFF' },
@@ -29,28 +26,62 @@ const initialSettings: Settings = {
     letterSpacing: 0,
     lineHeight: 1.5,
   },
+  footer: {
+    font: 'PT Sans',
+    color: '#808080',
+    alignment: 'center',
+    letterSpacing: 0,
+    lineHeight: 1.4,
+  },
   dimension: {
     width: 1080,
     height: 1080,
   }
 };
 
+const initialBulkText = `🚀 OpenAI GPT-5 launches today
+Faster, smarter, and more reliable than ever.
+Source: OpenAI
+
+🤖 Anthropic releases Claude Opus
+Built to rival GPT-5 with reasoning skills.
+Source: Anthropic`;
+
 export function InstaSlidesApp() {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [settings, setSettings] = useState<Settings>(initialSettings);
+  const [bulkText, setBulkText] = useState(initialBulkText);
   const [isClient, setIsClient] = useState(false);
+
+  const parseBulkText = useCallback((text: string): Slide[] => {
+    const slideBlocks = text.split(/\n\s*\n/);
+    return slideBlocks.map((block, index) => {
+      const lines = block.trim().split('\n');
+      const headline = lines[0] || '';
+      const footerLine = lines.find(line => line.startsWith('Source:'));
+      const captionLines = lines.slice(1).filter(line => !line.startsWith('Source:'));
+      const caption = captionLines.join('\n');
+      const footer = footerLine ? footerLine.replace('Source:', '').trim() : undefined;
+
+      return {
+        id: `slide-${Date.now()}-${index}`,
+        headline,
+        caption,
+        footer,
+        isLoading: false,
+      };
+    });
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
-    setSlides([
-        {
-          id: `slide-${Date.now()}`,
-          headline: "Your headline goes here",
-          caption: "And your caption follows below. You can customize everything on the left!",
-          isLoading: false,
-        }
-    ]);
-  }, []);
+    setSlides(parseBulkText(initialBulkText));
+  }, [parseBulkText]);
+
+
+  const regenerateSlides = useCallback(() => {
+    setSlides(parseBulkText(bulkText));
+  }, [bulkText, parseBulkText]);
 
 
   const addSlide = useCallback(() => {
@@ -60,6 +91,7 @@ export function InstaSlidesApp() {
         id: `slide-${Date.now()}`,
         headline: 'New Slide Headline',
         caption: 'New slide caption.',
+        footer: 'Source:',
         isLoading: false,
       },
     ]);
@@ -78,7 +110,7 @@ export function InstaSlidesApp() {
     setSlides(slides => slides.map(s => s.id === id ? { ...s, ...updatedProps } : s));
   }, []);
 
-  const updateSlideText = useCallback((id: string, part: 'headline' | 'caption', text: string) => {
+  const updateSlideText = useCallback((id: string, part: 'headline' | 'caption' | 'footer', text: string) => {
     updateSlide(id, { [part]: text });
   }, [updateSlide]);
   
@@ -98,7 +130,29 @@ export function InstaSlidesApp() {
       </header>
 
       <div className="flex-grow grid md:grid-cols-12 gap-4 p-4 overflow-hidden">
-        <div className="md:col-span-4 lg:col-span-3 h-full overflow-hidden">
+        <div className="md:col-span-4 lg:col-span-3 h-full overflow-y-auto flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5" />
+                Input Text
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="bulk-text" className="text-sm text-muted-foreground">Paste your content here to generate slides.</Label>
+              <Textarea
+                id="bulk-text"
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                rows={10}
+                className="w-full"
+                placeholder="Paste your text here..."
+              />
+              <Button onClick={regenerateSlides} className="w-full">
+                Regenerate Slides
+              </Button>
+            </CardContent>
+          </Card>
           <EditorPanel
             slides={slides}
             settings={settings}

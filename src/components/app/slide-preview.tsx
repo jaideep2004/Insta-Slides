@@ -23,33 +23,42 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
   
   const debouncedHeadline = useDebounce(slide.headline, 500);
   const debouncedCaption = useDebounce(slide.caption, 500);
+  const debouncedFooter = useDebounce(slide.footer, 500);
   const debouncedSettings = useDebounce(settings, 500);
 
   const runAutoAdjust = useCallback(async () => {
-    if ((!debouncedHeadline && !debouncedCaption) || !previewRef.current) return;
+    if ((!debouncedHeadline && !debouncedCaption && !debouncedFooter) || !previewRef.current) return;
     
     updateSlide(slide.id, { isLoading: true });
 
     try {
-      const headlinePromise = debouncedHeadline ? autoAdjustText({
+      const headlinePromise = autoAdjustText({
         text: debouncedHeadline,
-        imageWidth: settings.dimension.width * 0.9, // 90% of width for padding
-        imageHeight: settings.dimension.height * 0.5, // 50% of height
+        imageWidth: settings.dimension.width * 0.9,
+        imageHeight: settings.dimension.height * 0.4,
         font: settings.headline.font,
-      }) : Promise.resolve(undefined);
+      });
 
-      const captionPromise = debouncedCaption ? autoAdjustText({
+      const captionPromise = autoAdjustText({
         text: debouncedCaption,
         imageWidth: settings.dimension.width * 0.9,
-        imageHeight: settings.dimension.height * 0.4, // 40% of height
+        imageHeight: settings.dimension.height * 0.3,
         font: settings.caption.font,
-      }) : Promise.resolve(undefined);
+      });
+      
+      const footerPromise = autoAdjustText({
+          text: debouncedFooter || '',
+          imageWidth: settings.dimension.width * 0.9,
+          imageHeight: settings.dimension.height * 0.1,
+          font: settings.footer.font,
+        });
 
-      const [adjustedHeadline, adjustedCaption] = await Promise.all([headlinePromise, captionPromise]);
+      const [adjustedHeadline, adjustedCaption, adjustedFooter] = await Promise.all([headlinePromise, captionPromise, footerPromise]);
 
       updateSlide(slide.id, {
         adjustedHeadline: adjustedHeadline ? { wrappedText: adjustedHeadline.wrappedText, fontSize: adjustedHeadline.fontSize } : undefined,
         adjustedCaption: adjustedCaption ? { wrappedText: adjustedCaption.wrappedText, fontSize: adjustedCaption.fontSize } : undefined,
+        adjustedFooter: adjustedFooter ? { wrappedText: adjustedFooter.wrappedText, fontSize: adjustedFooter.fontSize } : undefined,
         isLoading: false,
       });
 
@@ -62,7 +71,7 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
       });
       updateSlide(slide.id, { isLoading: false });
     }
-  }, [debouncedHeadline, debouncedCaption, debouncedSettings, slide.id, settings.dimension, settings.headline.font, settings.caption.font, updateSlide, toast]);
+  }, [debouncedHeadline, debouncedCaption, debouncedFooter, debouncedSettings, slide.id, updateSlide, toast, settings.dimension, settings.headline.font, settings.caption.font, settings.footer.font]);
 
   useEffect(() => {
     runAutoAdjust();
@@ -110,6 +119,15 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
     lineHeight: settings.caption.lineHeight,
     fontSize: slide.adjustedCaption ? `${slide.adjustedCaption.fontSize}px` : '16px',
   };
+
+  const footerStyle = {
+    fontFamily: `'${settings.footer.font}', sans-serif`,
+    color: settings.footer.color,
+    textAlign: settings.footer.alignment,
+    letterSpacing: `${settings.footer.letterSpacing}em`,
+    lineHeight: settings.footer.lineHeight,
+    fontSize: slide.adjustedFooter ? `${slide.adjustedFooter.fontSize}px` : '12px',
+  };
   
   return (
     <Card className="overflow-hidden">
@@ -127,11 +145,19 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
             <div className="w-full h-full flex flex-col justify-center items-center gap-4">
               <Skeleton className="h-1/4 w-3/4" />
               <Skeleton className="h-1/2 w-full" />
+              <Skeleton className="h-1/6 w-1/2" />
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {slide.adjustedHeadline && <h2 style={headlineStyle} className="font-bold font-headline">{slide.adjustedHeadline.wrappedText}</h2>}
-              {slide.adjustedCaption && <p style={captionStyle} className="font-body">{slide.adjustedCaption.wrappedText}</p>}
+             <div className="w-full h-full flex flex-col justify-between items-center">
+                <div className="flex-grow flex flex-col justify-center items-center gap-4 w-full">
+                  {slide.adjustedHeadline && <h2 style={headlineStyle} className="font-bold font-headline">{slide.adjustedHeadline.wrappedText}</h2>}
+                  {slide.adjustedCaption && <p style={captionStyle} className="font-body">{slide.adjustedCaption.wrappedText}</p>}
+                </div>
+                {slide.adjustedFooter && (
+                  <div className="w-full pb-4">
+                     <p style={footerStyle} className="font-body text-xs">{slide.adjustedFooter.wrappedText}</p>
+                  </div>
+                )}
             </div>
           )}
         </div>
