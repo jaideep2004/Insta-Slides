@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from 'react';
 import type { Settings, Slide } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,7 +25,7 @@ interface EditorPanelProps {
   addSlide: () => void;
   removeSlide: (id: string) => void;
   updateSlideText: (id: string, part: 'headline' | 'caption', text: string) => void;
-  setSettings: (settings: Settings) => void;
+  setSettings: (settings: Settings | ((s: Settings) => Settings)) => void;
 }
 
 const fonts = ['Poppins', 'PT Sans', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald'];
@@ -38,22 +39,24 @@ export function EditorPanel({
   updateSlideText,
   setSettings,
 }: EditorPanelProps) {
+  const handleSettingsChange = React.useCallback(
+    <T extends keyof Settings, K extends keyof Settings[T]>(
+      group: T,
+      key: K,
+      value: Settings[T][K]
+    ) => {
+      setSettings((prev: Settings) => ({
+        ...prev,
+        [group]: {
+          ...prev[group],
+          [key]: value,
+        },
+      }));
+    },
+    [setSettings]
+  );
 
-  const handleSettingsChange = <T extends keyof Settings, K extends keyof Settings[T]>(
-    group: T,
-    key: K,
-    value: Settings[T][K]
-  ) => {
-    setSettings({
-      ...settings,
-      [group]: {
-        ...settings[group],
-        [key]: value,
-      },
-    });
-  };
-
-  const handleBackgroundValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackgroundValueChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (settings.background.type === 'color') {
       handleSettingsChange('background', 'value', e.target.value);
     } else {
@@ -68,7 +71,7 @@ export function EditorPanel({
         reader.readAsDataURL(file);
       }
     }
-  };
+  }, [settings.background.type, handleSettingsChange]);
 
   return (
     <Card className="h-full flex flex-col">
