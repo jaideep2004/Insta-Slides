@@ -62,7 +62,7 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
       });
       updateSlide(slide.id, { isLoading: false });
     }
-  }, [debouncedHeadline, debouncedCaption, debouncedSettings, slide.id, updateSlide, toast, settings.dimension, settings.headline.font, settings.caption.font]);
+  }, [debouncedHeadline, debouncedCaption, debouncedSettings, slide.id, settings.dimension, settings.headline.font, settings.caption.font, updateSlide, toast]);
 
   useEffect(() => {
     runAutoAdjust();
