@@ -27,33 +27,54 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
   const debouncedSettings = useDebounce(settings, 500);
 
   const runAutoAdjust = useCallback(async () => {
-    if ((!debouncedHeadline && !debouncedCaption && !debouncedFooter) || !previewRef.current) return;
+    if ((!debouncedHeadline && !debouncedCaption && !debouncedFooter) || !previewRef.current) {
+        updateSlide(slide.id, {
+        adjustedHeadline: undefined,
+        adjustedCaption: undefined,
+        adjustedFooter: undefined,
+        isLoading: false,
+        });
+        return;
+    };
     
     updateSlide(slide.id, { isLoading: true });
 
     try {
-      const headlinePromise = autoAdjustText({
-        text: debouncedHeadline,
-        imageWidth: settings.dimension.width * 0.9,
-        imageHeight: settings.dimension.height * 0.4,
-        font: settings.headline.font,
-      });
-
-      const captionPromise = autoAdjustText({
-        text: debouncedCaption,
-        imageWidth: settings.dimension.width * 0.9,
-        imageHeight: settings.dimension.height * 0.3,
-        font: settings.caption.font,
-      });
-      
-      const footerPromise = autoAdjustText({
-          text: debouncedFooter || '',
+      const promises = [];
+      if (debouncedHeadline) {
+        promises.push(autoAdjustText({
+          text: debouncedHeadline,
           imageWidth: settings.dimension.width * 0.9,
-          imageHeight: settings.dimension.height * 0.1,
-          font: settings.footer.font,
-        });
+          imageHeight: settings.dimension.height * 0.4,
+          font: settings.headline.font,
+        }));
+      } else {
+        promises.push(Promise.resolve(undefined));
+      }
 
-      const [adjustedHeadline, adjustedCaption, adjustedFooter] = await Promise.all([headlinePromise, captionPromise, footerPromise]);
+      if (debouncedCaption) {
+        promises.push(autoAdjustText({
+          text: debouncedCaption,
+          imageWidth: settings.dimension.width * 0.9,
+          imageHeight: settings.dimension.height * 0.3,
+          font: settings.caption.font,
+        }));
+      } else {
+         promises.push(Promise.resolve(undefined));
+      }
+      
+      if (debouncedFooter) {
+        promises.push(autoAdjustText({
+            text: debouncedFooter || '',
+            imageWidth: settings.dimension.width * 0.9,
+            imageHeight: settings.dimension.height * 0.1,
+            font: settings.footer.font,
+          }));
+      } else {
+         promises.push(Promise.resolve(undefined));
+      }
+
+      const [adjustedHeadline, adjustedCaption, adjustedFooter] = await Promise.all(promises);
 
       updateSlide(slide.id, {
         adjustedHeadline: adjustedHeadline ? { wrappedText: adjustedHeadline.wrappedText, fontSize: adjustedHeadline.fontSize } : undefined,
