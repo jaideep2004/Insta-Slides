@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Settings, Slide } from '@/types';
 import { EditorPanel } from './editor-panel';
 import { PreviewArea } from './preview-area';
@@ -53,31 +53,34 @@ export function InstaSlidesApp() {
   }, []);
 
 
-  const addSlide = () => {
-    setSlides([
-      ...slides,
-      { 
+  const addSlide = useCallback(() => {
+    setSlides((prevSlides) => [
+      ...prevSlides,
+      {
         id: `slide-${Date.now()}`,
         headline: 'New Slide Headline',
         caption: 'New slide caption.',
-        isLoading: false 
+        isLoading: false,
       },
     ]);
-  };
+  }, []);
 
-  const removeSlide = (id: string) => {
-    if (slides.length > 1) {
-      setSlides(slides.filter((slide) => slide.id !== id));
-    }
-  };
+  const removeSlide = useCallback((id: string) => {
+    setSlides((prevSlides) => {
+      if (prevSlides.length > 1) {
+        return prevSlides.filter((slide) => slide.id !== id);
+      }
+      return prevSlides;
+    });
+  }, []);
 
-  const updateSlide = (id: string, updatedProps: Partial<Slide>) => {
-    setSlides(slides.map(s => s.id === id ? { ...s, ...updatedProps } : s));
-  };
+  const updateSlide = useCallback((id: string, updatedProps: Partial<Slide>) => {
+    setSlides(slides => slides.map(s => s.id === id ? { ...s, ...updatedProps } : s));
+  }, []);
 
-  const updateSlideText = (id: string, part: 'headline' | 'caption', text: string) => {
+  const updateSlideText = useCallback((id: string, part: 'headline' | 'caption', text: string) => {
     updateSlide(id, { [part]: text });
-  };
+  }, [updateSlide]);
   
   if (!isClient) {
     return null; // Or a loading spinner
