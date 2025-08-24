@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Settings, Slide } from '@/types';
 import { EditorPanel } from './editor-panel';
 import { PreviewArea } from './preview-area';
 import { Presentation } from 'lucide-react';
 
-const initialSlide: Slide = {
-  id: `slide-${Date.now()}`,
+const createInitialSlide = (): Slide => ({
+  id: `slide-${Math.random()}`, // Temporary ID
   headline: "Your headline goes here",
   caption: "And your caption follows below. You can customize everything on the left!",
   isLoading: false,
-};
+});
 
 const initialSettings: Settings = {
   background: { type: 'color', value: '#FFFFFF' },
@@ -36,8 +36,22 @@ const initialSettings: Settings = {
 };
 
 export function InstaSlidesApp() {
-  const [slides, setSlides] = useState<Slide[]>([initialSlide]);
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [settings, setSettings] = useState<Settings>(initialSettings);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    setSlides([
+        {
+          id: `slide-${Date.now()}`,
+          headline: "Your headline goes here",
+          caption: "And your caption follows below. You can customize everything on the left!",
+          isLoading: false,
+        }
+    ]);
+  }, []);
+
 
   const addSlide = () => {
     setSlides([
@@ -65,6 +79,10 @@ export function InstaSlidesApp() {
     updateSlide(id, { [part]: text });
   };
   
+  if (!isClient) {
+    return null; // Or a loading spinner
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <header className="flex items-center justify-between p-4 border-b">
