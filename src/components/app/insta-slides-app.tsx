@@ -91,6 +91,9 @@ export function InstaSlidesApp() {
     setSlides(parseBulkText(initialBulkText));
   }, [parseBulkText, initialBulkText]);
 
+  const memoizedSetSettings = useCallback((newSettings: Settings | ((s: Settings) => Settings)) => {
+    setSettings(newSettings);
+  }, []);
 
   const regenerateSlides = useCallback(() => {
     setSlides(parseBulkText(bulkText));
@@ -182,7 +185,7 @@ export function InstaSlidesApp() {
             addSlide={addSlide}
             removeSlide={removeSlide}
             updateSlideText={updateSlideText}
-            setSettings={setSettings}
+            setSettings={memoizedSetSettings}
             triggerAllSlidesAdjustment={triggerAllSlidesAdjustment}
             isAdjustingAll={isAdjustingAll}
           />
