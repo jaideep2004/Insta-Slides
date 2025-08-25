@@ -14,6 +14,7 @@ const initialSettings: Settings = {
   background: { type: 'color', value: '#FFFFFF' },
   headline: {
     font: 'Poppins',
+    fontSize: 96,
     color: '#0D0D0D',
     alignment: 'center',
     letterSpacing: -0.02,
@@ -21,6 +22,7 @@ const initialSettings: Settings = {
   },
   caption: {
     font: 'PT Sans',
+    fontSize: 36,
     color: '#404040',
     alignment: 'center',
     letterSpacing: 0,
@@ -197,5 +199,3 @@ export function InstaSlidesApp() {
     </div>
   );
 }
-
-    

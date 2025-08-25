@@ -27,6 +27,7 @@ export interface Settings {
   };
   headline: {
     font: string;
+    fontSize: number;
     color: string;
     alignment: Alignment;
     letterSpacing: number;
@@ -34,6 +35,7 @@ export interface Settings {
   };
   caption: {
     font: string;
+    fontSize: number;
     color: string;
     alignment: Alignment;
     letterSpacing: number;

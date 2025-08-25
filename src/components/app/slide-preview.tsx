@@ -22,16 +22,16 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  const debouncedHeadline = useDebounce(slide.headline, 500);
-  const debouncedCaption = useDebounce(slide.caption, 500);
-  const debouncedFooter = useDebounce(slide.footer, 500);
+  const debouncedHeadline = useDebounce(slide.headline, 1000);
+  const debouncedCaption = useDebounce(slide.caption, 1000);
+  const debouncedFooter = useDebounce(slide.footer, 1000);
   
   const runAutoAdjust = useCallback(async (isManualTrigger: boolean = false) => {
     if ((!slide.headline && !slide.caption && !slide.footer) || !previewRef.current) {
         updateSlide(slide.id, {
-        adjustedHeadline: undefined,
-        adjustedCaption: undefined,
-        adjustedFooter: undefined,
+        adjustedHeadline: { wrappedText: slide.headline, fontSize: settings.headline.fontSize },
+        adjustedCaption: { wrappedText: slide.caption, fontSize: settings.caption.fontSize },
+        adjustedFooter: { wrappedText: slide.footer || '', fontSize: 24 }, // Default size for footer
         isLoading: false,
         });
         return;
@@ -79,8 +79,8 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
       const [adjustedHeadline, adjustedCaption, adjustedFooter] = await Promise.all(promises);
 
       updateSlide(slide.id, {
-        adjustedHeadline: adjustedHeadline ? { wrappedText: adjustedHeadline.wrappedText, fontSize: adjustedHeadline.fontSize } : undefined,
-        adjustedCaption: adjustedCaption ? { wrappedText: adjustedCaption.wrappedText, fontSize: adjustedCaption.fontSize } : undefined,
+        adjustedHeadline: adjustedHeadline ? { wrappedText: adjustedHeadline.wrappedText, fontSize: adjustedHeadline.fontSize } : { wrappedText: currentText.headline, fontSize: settings.headline.fontSize },
+        adjustedCaption: adjustedCaption ? { wrappedText: adjustedCaption.wrappedText, fontSize: adjustedCaption.fontSize } : { wrappedText: currentText.caption, fontSize: settings.caption.fontSize },
         adjustedFooter: adjustedFooter ? { wrappedText: adjustedFooter.wrappedText, fontSize: adjustedFooter.fontSize } : undefined,
         isLoading: false,
       });
@@ -98,7 +98,8 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
 
   // Effect for automatic adjustment on text change (debounced)
   useEffect(() => {
-    runAutoAdjust();
+    // We only run auto-adjust for manual triggers now.
+    // The debounced text change effect is removed to prevent excessive API calls.
   }, [debouncedHeadline, debouncedCaption, debouncedFooter]);
 
   // Effect for manual adjustment trigger
@@ -107,6 +108,14 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
       runAutoAdjust(true);
     }
   }, [adjustmentNonce, runAutoAdjust]);
+  
+  // Effect to apply manual settings changes without calling AI
+  useEffect(() => {
+    updateSlide(slide.id, {
+        adjustedHeadline: { wrappedText: slide.headline, fontSize: settings.headline.fontSize },
+        adjustedCaption: { wrappedText: slide.caption, fontSize: settings.caption.fontSize },
+    });
+  }, [settings.headline.fontSize, settings.caption.fontSize, settings.headline.font, settings.caption.font, slide.headline, slide.caption, updateSlide]);
 
 
   const handleDownload = () => {
@@ -140,7 +149,9 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
     textAlign: settings.headline.alignment,
     letterSpacing: `${settings.headline.letterSpacing}em`,
     lineHeight: settings.headline.lineHeight,
-    fontSize: slide.adjustedHeadline ? `${slide.adjustedHeadline.fontSize}px` : '24px',
+    fontSize: slide.adjustedHeadline ? `${slide.adjustedHeadline.fontSize}px` : `${settings.headline.fontSize}px`,
+    wordWrap: 'break-word' as const,
+    whiteSpace: 'pre-wrap' as const,
   };
 
   const captionStyle = {
@@ -149,7 +160,9 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
     textAlign: settings.caption.alignment,
     letterSpacing: `${settings.caption.letterSpacing}em`,
     lineHeight: settings.caption.lineHeight,
-    fontSize: slide.adjustedCaption ? `${slide.adjustedCaption.fontSize}px` : '16px',
+    fontSize: slide.adjustedCaption ? `${slide.adjustedCaption.fontSize}px` : `${settings.caption.fontSize}px`,
+    wordWrap: 'break-word' as const,
+    whiteSpace: 'pre-wrap' as const,
   };
 
   const footerStyle = {
@@ -158,7 +171,9 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
     textAlign: settings.footer.alignment,
     letterSpacing: `${settings.footer.letterSpacing}em`,
     lineHeight: settings.footer.lineHeight,
-    fontSize: slide.adjustedFooter ? `${slide.adjustedFooter.fontSize}px` : '12px',
+    fontSize: slide.adjustedFooter ? `${slide.adjustedFooter.fontSize}px` : '18px',
+    wordWrap: 'break-word' as const,
+    whiteSpace: 'pre-wrap' as const,
   };
   
   return (
@@ -182,12 +197,12 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
           ) : (
              <div className="w-full h-full flex flex-col justify-between items-center">
                 <div className="flex-grow flex flex-col justify-center items-center gap-4 w-full">
-                  {slide.adjustedHeadline && <h2 style={headlineStyle} className="font-bold font-headline">{slide.adjustedHeadline.wrappedText}</h2>}
-                  {slide.adjustedCaption && <p style={captionStyle} className="font-body">{slide.adjustedCaption.wrappedText}</p>}
+                  {slide.headline && <h2 style={headlineStyle} className="font-bold font-headline">{slide.adjustedHeadline?.wrappedText || slide.headline}</h2>}
+                  {slide.caption && <p style={captionStyle} className="font-body">{slide.adjustedCaption?.wrappedText || slide.caption}</p>}
                 </div>
-                {slide.adjustedFooter && (
+                {(slide.footer || slide.adjustedFooter) && (
                   <div className="w-full pb-4">
-                     <p style={footerStyle} className="font-body text-xs">{slide.adjustedFooter.wrappedText}</p>
+                     <p style={footerStyle} className="font-body text-xs">{slide.adjustedFooter?.wrappedText || slide.footer}</p>
                   </div>
                 )}
             </div>
@@ -207,5 +222,3 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
     </Card>
   );
 }
-
-    

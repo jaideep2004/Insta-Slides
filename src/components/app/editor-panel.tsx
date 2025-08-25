@@ -196,6 +196,10 @@ export function EditorPanel({
                     </Select>
                   </div>
                   <div className="grid gap-2">
+                    <Label>Font Size: {settings.headline.fontSize}px</Label>
+                    <Slider value={[settings.headline.fontSize]} onValueChange={([v]) => handleSettingsChange('headline', 'fontSize', v)} min={12} max={144} step={1} />
+                  </div>
+                  <div className="grid gap-2">
                     <Label>Color</Label>
                     <Input type="color" value={settings.headline.color} onChange={(e) => handleSettingsChange('headline', 'color', e.target.value)} className='p-1 h-10 w-20'/>
                   </div>
@@ -229,6 +233,10 @@ export function EditorPanel({
                         {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Font Size: {settings.caption.fontSize}px</Label>
+                    <Slider value={[settings.caption.fontSize]} onValueChange={([v]) => handleSettingsChange('caption', 'fontSize', v)} min={10} max={72} step={1} />
                   </div>
                   <div className="grid gap-2">
                     <Label>Color</Label>
@@ -308,5 +316,3 @@ export function EditorPanel({
     </Card>
   );
 }
-
-    
