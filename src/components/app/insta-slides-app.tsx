@@ -91,9 +91,39 @@ export function InstaSlidesApp() {
     setSlides(parseBulkText(initialBulkText));
   }, [parseBulkText, initialBulkText]);
 
-  const memoizedSetSettings = useCallback((newSettings: Settings | ((s: Settings) => Settings)) => {
-    setSettings(newSettings);
-  }, []);
+  const handleSettingsChange = useCallback(
+    <T extends keyof Settings, K extends keyof Settings[T]>(
+      group: T,
+      key: K,
+      value: Settings[T][K]
+    ) => {
+      setSettings((prev) => ({
+        ...prev,
+        [group]: {
+          ...prev[group],
+          [key]: value,
+        },
+      }));
+    },
+    []
+  );
+
+  const handleBackgroundValueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (settings.background.type === 'color') {
+      handleSettingsChange('background', 'value', e.target.value);
+    } else {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            handleSettingsChange('background', 'value', event.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }, [settings.background.type, handleSettingsChange]);
 
   const regenerateSlides = useCallback(() => {
     setSlides(parseBulkText(bulkText));
@@ -185,7 +215,8 @@ export function InstaSlidesApp() {
             addSlide={addSlide}
             removeSlide={removeSlide}
             updateSlideText={updateSlideText}
-            setSettings={memoizedSetSettings}
+            handleSettingsChange={handleSettingsChange}
+            handleBackgroundValueChange={handleBackgroundValueChange}
             triggerAllSlidesAdjustment={triggerAllSlidesAdjustment}
             isAdjustingAll={isAdjustingAll}
           />

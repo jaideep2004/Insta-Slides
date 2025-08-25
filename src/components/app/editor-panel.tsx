@@ -25,7 +25,8 @@ interface EditorPanelProps {
   addSlide: () => void;
   removeSlide: (id: string) => void;
   updateSlideText: (id: string, part: 'headline' | 'caption' | 'footer', text: string) => void;
-  setSettings: (settings: Settings | ((s: Settings) => Settings)) => void;
+  handleSettingsChange: <T extends keyof Settings, K extends keyof Settings[T]>(group: T, key: K, value: Settings[T][K]) => void;
+  handleBackgroundValueChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   triggerAllSlidesAdjustment: () => Promise<void>;
   isAdjustingAll: boolean;
 }
@@ -39,44 +40,11 @@ export function EditorPanel({
   addSlide,
   removeSlide,
   updateSlideText,
-  setSettings,
+  handleSettingsChange,
+  handleBackgroundValueChange,
   triggerAllSlidesAdjustment,
   isAdjustingAll
 }: EditorPanelProps) {
-  const handleSettingsChange = React.useCallback(
-    <T extends keyof Settings, K extends keyof Settings[T]>(
-      group: T,
-      key: K,
-      value: Settings[T][K]
-    ) => {
-      setSettings((prev: Settings) => ({
-        ...prev,
-        [group]: {
-          ...prev[group],
-          [key]: value,
-        },
-      }));
-    },
-    [setSettings]
-  );
-
-  const handleBackgroundValueChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (settings.background.type === 'color') {
-      handleSettingsChange('background', 'value', e.target.value);
-    } else {
-      const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            handleSettingsChange('background', 'value', event.target.result as string);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  }, [settings.background.type, handleSettingsChange]);
-
   return (
     <Card className="h-full flex flex-col">
        <CardHeader>
