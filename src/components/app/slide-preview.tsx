@@ -107,17 +107,9 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
     if (adjustmentNonce > 0) {
       runAutoAdjust(true);
     }
-  }, [adjustmentNonce, runAutoAdjust]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjustmentNonce]);
   
-  // Effect to apply manual settings changes without calling AI
-  useEffect(() => {
-    updateSlide(slide.id, {
-        adjustedHeadline: { wrappedText: slide.headline, fontSize: settings.headline.fontSize },
-        adjustedCaption: { wrappedText: slide.caption, fontSize: settings.caption.fontSize },
-    });
-  }, [settings.headline.fontSize, settings.caption.fontSize, settings.headline.font, settings.caption.font, slide.headline, slide.caption, updateSlide]);
-
-
   const handleDownload = () => {
     toast({
         title: "Preparing download...",
