@@ -29,6 +29,7 @@ interface EditorPanelProps {
   handleBackgroundValueChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   triggerAllSlidesAdjustment: () => Promise<void>;
   isAdjustingAll: boolean;
+  currentlyAdjustingSlideId: string | null;
 }
 
 const fonts = ['Poppins', 'PT Sans', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald'];
@@ -43,8 +44,14 @@ export function EditorPanel({
   handleSettingsChange,
   handleBackgroundValueChange,
   triggerAllSlidesAdjustment,
-  isAdjustingAll
+  isAdjustingAll,
+  currentlyAdjustingSlideId,
 }: EditorPanelProps) {
+  const currentSlideIndex = slides.findIndex(s => s.id === currentlyAdjustingSlideId);
+  const progressText = isAdjustingAll && currentSlideIndex !== -1 
+    ? `Adjusting ${currentSlideIndex + 1}/${slides.length}...`
+    : 'Auto-Adjust All';
+    
   return (
     <Card className="h-full flex flex-col">
        <CardHeader>
@@ -58,228 +65,236 @@ export function EditorPanel({
               variant="outline"
               onClick={triggerAllSlidesAdjustment}
               disabled={isAdjustingAll}
+              className="w-[180px]"
             >
               {isAdjustingAll ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {progressText}
+                </>
               ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Auto-Adjust All
+                </>
               )}
-              Auto-Adjust All
             </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 flex-grow">
-        <Tabs defaultValue="slides" className="flex flex-col h-full">
-          <TabsList className="grid w-full grid-cols-6 rounded-none">
-            <TabsTrigger value="slides">Slides</TabsTrigger>
-            <TabsTrigger value="background">Background</TabsTrigger>
-            <TabsTrigger value="headline">Headline</TabsTrigger>
-            <TabsTrigger value="caption">Caption</TabsTrigger>
-            <TabsTrigger value="footer">Footer</TabsTrigger>
-            <TabsTrigger value="layout">Layout</TabsTrigger>
-          </TabsList>
+        <fieldset disabled={isAdjustingAll} className="h-full">
+          <Tabs defaultValue="slides" className="flex flex-col h-full">
+            <TabsList className="grid w-full grid-cols-6 rounded-none">
+              <TabsTrigger value="slides">Slides</TabsTrigger>
+              <TabsTrigger value="background">Background</TabsTrigger>
+              <TabsTrigger value="headline">Headline</TabsTrigger>
+              <TabsTrigger value="caption">Caption</TabsTrigger>
+              <TabsTrigger value="footer">Footer</TabsTrigger>
+              <TabsTrigger value="layout">Layout</TabsTrigger>
+            </TabsList>
 
-          <ScrollArea className="flex-grow">
-            <div className="p-4">
-              <TabsContent value="slides">
-                <div className="space-y-4">
-                  {slides.map((slide, index) => (
-                    <Card key={slide.id}>
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <Label htmlFor={`headline-${slide.id}`}>Slide {index + 1}</Label>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSlide(slide.id)}
-                            disabled={slides.length <= 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <Textarea
-                          id={`headline-${slide.id}`}
-                          placeholder="Headline..."
-                          value={slide.headline}
-                          onChange={(e) => updateSlideText(slide.id, 'headline', e.target.value)}
-                          className='font-headline'
-                        />
-                        <Textarea
-                          id={`caption-${slide.id}`}
-                          placeholder="Caption..."
-                          value={slide.caption}
-                          onChange={(e) => updateSlideText(slide.id, 'caption', e.target.value)}
-                        />
-                        <Input
-                          id={`footer-${slide.id}`}
-                          placeholder="Source..."
-                          value={slide.footer || ''}
-                          onChange={(e) => updateSlideText(slide.id, 'footer', e.target.value)}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button onClick={addSlide} className="w-full">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Slide
-                  </Button>
-                </div>
-              </TabsContent>
+            <ScrollArea className="flex-grow">
+              <div className="p-4">
+                <TabsContent value="slides">
+                  <div className="space-y-4">
+                    {slides.map((slide, index) => (
+                      <Card key={slide.id} className={cn(currentlyAdjustingSlideId === slide.id && "ring-2 ring-primary")}>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <Label htmlFor={`headline-${slide.id}`}>Slide {index + 1}</Label>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeSlide(slide.id)}
+                              disabled={slides.length <= 1}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Textarea
+                            id={`headline-${slide.id}`}
+                            placeholder="Headline..."
+                            value={slide.headline}
+                            onChange={(e) => updateSlideText(slide.id, 'headline', e.target.value)}
+                            className='font-headline'
+                          />
+                          <Textarea
+                            id={`caption-${slide.id}`}
+                            placeholder="Caption..."
+                            value={slide.caption}
+                            onChange={(e) => updateSlideText(slide.id, 'caption', e.target.value)}
+                          />
+                          <Input
+                            id={`footer-${slide.id}`}
+                            placeholder="Source..."
+                            value={slide.footer || ''}
+                            onChange={(e) => updateSlideText(slide.id, 'footer', e.target.value)}
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <Button onClick={addSlide} className="w-full">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Slide
+                    </Button>
+                  </div>
+                </TabsContent>
 
-              <TabsContent value="background">
-                <div className="space-y-4">
-                  <Select
-                    value={settings.background.type}
-                    onValueChange={(value: 'color' | 'image') => handleSettingsChange('background', 'type', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Background Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="color">Color</SelectItem>
-                      <SelectItem value="image">Image</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-2">
-                    <Label>{settings.background.type === 'color' ? 'Color' : 'Image'}</Label>
-                    <Input
-                      type={settings.background.type === 'color' ? 'color' : 'file'}
-                      value={settings.background.type === 'color' ? settings.background.value : ''}
-                      onChange={handleBackgroundValueChange}
-                      className={settings.background.type === 'color' ? 'p-1 h-10 w-20' : 'flex-1'}
-                      accept={settings.background.type === 'image' ? 'image/*' : undefined}
-                    />
+                <TabsContent value="background">
+                  <div className="space-y-4">
+                    <Select
+                      value={settings.background.type}
+                      onValueChange={(value: 'color' | 'image') => handleSettingsChange('background', 'type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Background Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="color">Color</SelectItem>
+                        <SelectItem value="image">Image</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Label>{settings.background.type === 'color' ? 'Color' : 'Image'}</Label>
+                      <Input
+                        type={settings.background.type === 'color' ? 'color' : 'file'}
+                        value={settings.background.type === 'color' ? settings.background.value : ''}
+                        onChange={handleBackgroundValueChange}
+                        className={settings.background.type === 'color' ? 'p-1 h-10 w-20' : 'flex-1'}
+                        accept={settings.background.type === 'image' ? 'image/*' : undefined}
+                      />
+                    </div>
                   </div>
-                </div>
-              </TabsContent>
+                </TabsContent>
 
-              <TabsContent value="headline">
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label>Font</Label>
-                    <Select value={settings.headline.font} onValueChange={(v) => handleSettingsChange('headline', 'font', v)}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                <TabsContent value="headline">
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label>Font</Label>
+                      <Select value={settings.headline.font} onValueChange={(v) => handleSettingsChange('headline', 'font', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Font Size: {settings.headline.fontSize}px</Label>
+                      <Slider value={[settings.headline.fontSize]} onValueChange={([v]) => handleSettingsChange('headline', 'fontSize', v)} min={12} max={144} step={1} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Color</Label>
+                      <Input type="color" value={settings.headline.color} onChange={(e) => handleSettingsChange('headline', 'color', e.target.value)} className='p-1 h-10 w-20'/>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Alignment</Label>
+                      <Select value={settings.headline.alignment} onValueChange={(v) => handleSettingsChange('headline', 'alignment', v)}>
+                         <SelectTrigger><SelectValue/></SelectTrigger>
+                         <SelectContent>
+                          {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Letter Spacing: {settings.headline.letterSpacing.toFixed(2)}</Label>
+                      <Slider value={[settings.headline.letterSpacing]} onValueChange={([v]) => handleSettingsChange('headline', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Line Height: {settings.headline.lineHeight.toFixed(2)}</Label>
+                      <Slider value={[settings.headline.lineHeight]} onValueChange={([v]) => handleSettingsChange('headline', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Font Size: {settings.headline.fontSize}px</Label>
-                    <Slider value={[settings.headline.fontSize]} onValueChange={([v]) => handleSettingsChange('headline', 'fontSize', v)} min={12} max={144} step={1} />
+                </TabsContent>
+                
+                <TabsContent value="caption">
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label>Font</Label>
+                      <Select value={settings.caption.font} onValueChange={(v) => handleSettingsChange('caption', 'font', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Font Size: {settings.caption.fontSize}px</Label>
+                      <Slider value={[settings.caption.fontSize]} onValueChange={([v]) => handleSettingsChange('caption', 'fontSize', v)} min={10} max={72} step={1} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Color</Label>
+                      <Input type="color" value={settings.caption.color} onChange={(e) => handleSettingsChange('caption', 'color', e.target.value)} className='p-1 h-10 w-20' />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Alignment</Label>
+                      <Select value={settings.caption.alignment} onValueChange={(v) => handleSettingsChange('caption', 'alignment', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Letter Spacing: {settings.caption.letterSpacing.toFixed(2)}</Label>
+                      <Slider value={[settings.caption.letterSpacing]} onValueChange={([v]) => handleSettingsChange('caption', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Line Height: {settings.caption.lineHeight.toFixed(2)}</Label>
+                      <Slider value={[settings.caption.lineHeight]} onValueChange={([v]) => handleSettingsChange('caption', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Color</Label>
-                    <Input type="color" value={settings.headline.color} onChange={(e) => handleSettingsChange('headline', 'color', e.target.value)} className='p-1 h-10 w-20'/>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Alignment</Label>
-                    <Select value={settings.headline.alignment} onValueChange={(v) => handleSettingsChange('headline', 'alignment', v)}>
-                       <SelectTrigger><SelectValue/></SelectTrigger>
-                       <SelectContent>
-                        {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Letter Spacing: {settings.headline.letterSpacing.toFixed(2)}</Label>
-                    <Slider value={[settings.headline.letterSpacing]} onValueChange={([v]) => handleSettingsChange('headline', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Line Height: {settings.headline.lineHeight.toFixed(2)}</Label>
-                    <Slider value={[settings.headline.lineHeight]} onValueChange={([v]) => handleSettingsChange('headline', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="caption">
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label>Font</Label>
-                    <Select value={settings.caption.font} onValueChange={(v) => handleSettingsChange('caption', 'font', v)}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Font Size: {settings.caption.fontSize}px</Label>
-                    <Slider value={[settings.caption.fontSize]} onValueChange={([v]) => handleSettingsChange('caption', 'fontSize', v)} min={10} max={72} step={1} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Color</Label>
-                    <Input type="color" value={settings.caption.color} onChange={(e) => handleSettingsChange('caption', 'color', e.target.value)} className='p-1 h-10 w-20' />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Alignment</Label>
-                    <Select value={settings.caption.alignment} onValueChange={(v) => handleSettingsChange('caption', 'alignment', v)}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Letter Spacing: {settings.caption.letterSpacing.toFixed(2)}</Label>
-                    <Slider value={[settings.caption.letterSpacing]} onValueChange={([v]) => handleSettingsChange('caption', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Line Height: {settings.caption.lineHeight.toFixed(2)}</Label>
-                    <Slider value={[settings.caption.lineHeight]} onValueChange={([v]) => handleSettingsChange('caption', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
-                  </div>
-                </div>
-              </TabsContent>
+                </TabsContent>
 
-              <TabsContent value="footer">
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label>Font</Label>
-                    <Select value={settings.footer.font} onValueChange={(v) => handleSettingsChange('footer', 'font', v)}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                <TabsContent value="footer">
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label>Font</Label>
+                      <Select value={settings.footer.font} onValueChange={(v) => handleSettingsChange('footer', 'font', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {fonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Color</Label>
+                      <Input type="color" value={settings.footer.color} onChange={(e) => handleSettingsChange('footer', 'color', e.target.value)} className='p-1 h-10 w-20' />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Alignment</Label>
+                      <Select value={settings.footer.alignment} onValueChange={(v) => handleSettingsChange('footer', 'alignment', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Letter Spacing: {settings.footer.letterSpacing.toFixed(2)}</Label>
+                      <Slider value={[settings.footer.letterSpacing]} onValueChange={([v]) => handleSettingsChange('footer', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Line Height: {settings.footer.lineHeight.toFixed(2)}</Label>
+                      <Slider value={[settings.footer.lineHeight]} onValueChange={([v]) => handleSettingsChange('footer', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Color</Label>
-                    <Input type="color" value={settings.footer.color} onChange={(e) => handleSettingsChange('footer', 'color', e.target.value)} className='p-1 h-10 w-20' />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Alignment</Label>
-                    <Select value={settings.footer.alignment} onValueChange={(v) => handleSettingsChange('footer', 'alignment', v)}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        {alignments.map(align => <SelectItem key={align} value={align} className='capitalize'>{align}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Letter Spacing: {settings.footer.letterSpacing.toFixed(2)}</Label>
-                    <Slider value={[settings.footer.letterSpacing]} onValueChange={([v]) => handleSettingsChange('footer', 'letterSpacing', v)} min={-0.1} max={0.2} step={0.01} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Line Height: {settings.footer.lineHeight.toFixed(2)}</Label>
-                    <Slider value={[settings.footer.lineHeight]} onValueChange={([v]) => handleSettingsChange('footer', 'lineHeight', v)} min={0.8} max={2} step={0.05} />
-                  </div>
-                </div>
-              </TabsContent>
+                </TabsContent>
 
-              <TabsContent value="layout">
-                 <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label>Image Width (px)</Label>
-                    <Input type="number" value={settings.dimension.width} onChange={(e) => handleSettingsChange('dimension', 'width', parseInt(e.target.value, 10))} />
+                <TabsContent value="layout">
+                   <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label>Image Width (px)</Label>
+                      <Input type="number" value={settings.dimension.width} onChange={(e) => handleSettingsChange('dimension', 'width', parseInt(e.target.value, 10))} />
+                    </div>
+                     <div className="grid gap-2">
+                      <Label>Image Height (px)</Label>
+                      <Input type="number" value={settings.dimension.height} onChange={(e) => handleSettingsChange('dimension', 'height', parseInt(e.target.value, 10))} />
+                    </div>
                   </div>
-                   <div className="grid gap-2">
-                    <Label>Image Height (px)</Label>
-                    <Input type="number" value={settings.dimension.height} onChange={(e) => handleSettingsChange('dimension', 'height', parseInt(e.target.value, 10))} />
-                  </div>
-                </div>
-              </TabsContent>
-            </div>
-          </ScrollArea>
-        </Tabs>
+                </TabsContent>
+              </div>
+            </ScrollArea>
+          </Tabs>
+        </fieldset>
       </CardContent>
     </Card>
   );

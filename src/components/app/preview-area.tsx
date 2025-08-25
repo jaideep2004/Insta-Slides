@@ -14,9 +14,10 @@ interface PreviewAreaProps {
   settings: Settings;
   updateSlide: (id: string, updatedProps: Partial<Slide>) => void;
   adjustmentNonce: number;
+  currentlyAdjustingSlideId: string | null;
 }
 
-export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce }: PreviewAreaProps) {
+export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce, currentlyAdjustingSlideId }: PreviewAreaProps) {
   const { toast } = useToast();
 
   const handleDownloadAll = async () => {
@@ -25,6 +26,15 @@ export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce }: 
       description: "Your images are being generated and will download shortly."
     });
     for (const slide of slides) {
+      // Prevent downloading if slides are being adjusted
+      if (currentlyAdjustingSlideId) {
+        toast({
+          variant: "destructive",
+          title: "Cannot download",
+          description: "Please wait for auto-adjustment to finish.",
+        });
+        return;
+      }
       await downloadImage(slide.id, `${slide.headline.substring(0, 20) || 'slide'}.png`);
       // Add a small delay between downloads to prevent browser issues
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -39,7 +49,7 @@ export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce }: 
     <Card className="h-full flex flex-col">
       <CardHeader className='flex-row items-center justify-between'>
         <CardTitle>Preview</CardTitle>
-        <Button onClick={handleDownloadAll}>
+        <Button onClick={handleDownloadAll} disabled={!!currentlyAdjustingSlideId}>
           <Download className="mr-2 h-4 w-4" /> Download All
         </Button>
       </CardHeader>
@@ -53,6 +63,7 @@ export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce }: 
                 settings={settings}
                 updateSlide={updateSlide}
                 adjustmentNonce={adjustmentNonce}
+                isCurrentlyAdjusting={currentlyAdjustingSlideId === slide.id}
               />
             ))}
           </div>
@@ -61,5 +72,3 @@ export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce }: 
     </Card>
   );
 }
-
-    

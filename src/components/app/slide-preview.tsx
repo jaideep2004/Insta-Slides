@@ -9,15 +9,17 @@ import { Download, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { downloadImage } from '@/lib/download';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface SlidePreviewProps {
   slide: Slide;
   settings: Settings;
   updateSlide: (id: string, updatedProps: Partial<Slide>) => void;
   adjustmentNonce: number;
+  isCurrentlyAdjusting: boolean;
 }
 
-export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: SlidePreviewProps) {
+export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce, isCurrentlyAdjusting }: SlidePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
@@ -90,13 +92,12 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
     }
   }, [slide.id, slide.headline, slide.caption, slide.footer, settings, updateSlide, toast]);
 
-  // Effect for manual adjustment trigger
   useEffect(() => {
-    if (adjustmentNonce > 0) {
+    if (isCurrentlyAdjusting) {
       runAutoAdjust();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjustmentNonce]);
+  }, [isCurrentlyAdjusting, adjustmentNonce]);
   
   const handleDownload = () => {
     toast({
@@ -157,7 +158,7 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
   };
   
   return (
-    <Card className="overflow-hidden">
+    <Card className={cn("overflow-hidden", isCurrentlyAdjusting && "ring-2 ring-primary ring-offset-2")}>
       <CardContent className="p-0">
         <div
           id={slide.id}
@@ -190,7 +191,7 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
         </div>
       </CardContent>
       <CardFooter className="p-2">
-        <Button onClick={handleDownload} className="w-full" disabled={slide.isLoading}>
+        <Button onClick={handleDownload} className="w-full" disabled={slide.isLoading || isCurrentlyAdjusting}>
           {slide.isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (

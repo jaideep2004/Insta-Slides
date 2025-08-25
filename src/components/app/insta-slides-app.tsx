@@ -54,7 +54,9 @@ export function InstaSlidesApp() {
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [bulkText, setBulkText] = useState(initialBulkText);
   const [isClient, setIsClient] = useState(false);
+  
   const [isAdjustingAll, setIsAdjustingAll] = useState(false);
+  const [currentlyAdjustingSlideId, setCurrentlyAdjustingSlideId] = useState<string | null>(null);
   const [adjustmentNonce, setAdjustmentNonce] = useState(0);
 
   const parseBulkText = useCallback((text: string): Slide[] => {
@@ -87,8 +89,9 @@ export function InstaSlidesApp() {
   }, []);
 
   useEffect(() => {
+    const initialSlides = parseBulkText(initialBulkText);
+    setSlides(initialSlides);
     setIsClient(true);
-    setSlides(parseBulkText(initialBulkText));
   }, [parseBulkText, initialBulkText]);
 
   const handleSettingsChange = useCallback(
@@ -162,12 +165,26 @@ export function InstaSlidesApp() {
   
   const triggerAllSlidesAdjustment = useCallback(async () => {
     setIsAdjustingAll(true);
-    setAdjustmentNonce(n => n + 1);
-    // A timeout to allow all slides to receive the nonce update before completion
-    setTimeout(() => {
-       setIsAdjustingAll(false);
-    }, slides.length * 100);
-  }, [slides.length]);
+    for (const slide of slides) {
+        setCurrentlyAdjustingSlideId(slide.id);
+        setAdjustmentNonce(n => n + 1);
+        // Wait for the slide to finish adjusting. This relies on isLoading being managed in SlidePreview
+        await new Promise<void>((resolve) => {
+            const checkLoading = setInterval(() => {
+                setSlides(currentSlides => {
+                    const currentSlide = currentSlides.find(s => s.id === slide.id);
+                    if (currentSlide && !currentSlide.isLoading) {
+                        clearInterval(checkLoading);
+                        resolve();
+                    }
+                    return currentSlides;
+                });
+            }, 100); // Check every 100ms
+        });
+    }
+    setCurrentlyAdjustingSlideId(null);
+    setIsAdjustingAll(false);
+  }, [slides]);
 
 
   if (!isClient) {
@@ -203,8 +220,9 @@ export function InstaSlidesApp() {
                 rows={10}
                 className="w-full"
                 placeholder="Paste your text here..."
+                disabled={isAdjustingAll}
               />
-              <Button onClick={regenerateSlides} className="w-full">
+              <Button onClick={regenerateSlides} className="w-full" disabled={isAdjustingAll}>
                 Regenerate Slides
               </Button>
             </CardContent>
@@ -219,6 +237,7 @@ export function InstaSlidesApp() {
             handleBackgroundValueChange={handleBackgroundValueChange}
             triggerAllSlidesAdjustment={triggerAllSlidesAdjustment}
             isAdjustingAll={isAdjustingAll}
+            currentlyAdjustingSlideId={currentlyAdjustingSlideId}
           />
         </div>
         <div className="md:col-span-8 lg:col-span-9 h-full overflow-hidden">
@@ -227,6 +246,7 @@ export function InstaSlidesApp() {
             settings={settings}
             updateSlide={updateSlide}
             adjustmentNonce={adjustmentNonce}
+            currentlyAdjustingSlideId={currentlyAdjustingSlideId}
           />
         </div>
       </div>
