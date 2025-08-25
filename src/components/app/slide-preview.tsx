@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import type { Settings, Slide } from '@/types';
-import { useDebounce } from '@/hooks/use-debounce';
 import { autoAdjustText } from '@/ai/flows/auto-adjust-text';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,11 +21,7 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  const debouncedHeadline = useDebounce(slide.headline, 1000);
-  const debouncedCaption = useDebounce(slide.caption, 1000);
-  const debouncedFooter = useDebounce(slide.footer, 1000);
-  
-  const runAutoAdjust = useCallback(async (isManualTrigger: boolean = false) => {
+  const runAutoAdjust = useCallback(async () => {
     if ((!slide.headline && !slide.caption && !slide.footer) || !previewRef.current) {
         updateSlide(slide.id, {
         adjustedHeadline: { wrappedText: slide.headline, fontSize: settings.headline.fontSize },
@@ -41,11 +36,10 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
 
     try {
       const promises = [];
-      const currentText = isManualTrigger ? slide : { headline: debouncedHeadline, caption: debouncedCaption, footer: debouncedFooter };
 
-      if (currentText.headline) {
+      if (slide.headline) {
         promises.push(autoAdjustText({
-          text: currentText.headline,
+          text: slide.headline,
           imageWidth: settings.dimension.width * 0.9,
           imageHeight: settings.dimension.height * 0.4,
           font: settings.headline.font,
@@ -54,9 +48,9 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
         promises.push(Promise.resolve(undefined));
       }
 
-      if (currentText.caption) {
+      if (slide.caption) {
         promises.push(autoAdjustText({
-          text: currentText.caption,
+          text: slide.caption,
           imageWidth: settings.dimension.width * 0.9,
           imageHeight: settings.dimension.height * 0.3,
           font: settings.caption.font,
@@ -65,9 +59,9 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
          promises.push(Promise.resolve(undefined));
       }
       
-      if (currentText.footer) {
+      if (slide.footer) {
         promises.push(autoAdjustText({
-            text: currentText.footer || '',
+            text: slide.footer || '',
             imageWidth: settings.dimension.width * 0.9,
             imageHeight: settings.dimension.height * 0.1,
             font: settings.footer.font,
@@ -79,8 +73,8 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
       const [adjustedHeadline, adjustedCaption, adjustedFooter] = await Promise.all(promises);
 
       updateSlide(slide.id, {
-        adjustedHeadline: adjustedHeadline ? { wrappedText: adjustedHeadline.wrappedText, fontSize: adjustedHeadline.fontSize } : { wrappedText: currentText.headline, fontSize: settings.headline.fontSize },
-        adjustedCaption: adjustedCaption ? { wrappedText: adjustedCaption.wrappedText, fontSize: adjustedCaption.fontSize } : { wrappedText: currentText.caption, fontSize: settings.caption.fontSize },
+        adjustedHeadline: adjustedHeadline ? { wrappedText: adjustedHeadline.wrappedText, fontSize: adjustedHeadline.fontSize } : { wrappedText: slide.headline, fontSize: settings.headline.fontSize },
+        adjustedCaption: adjustedCaption ? { wrappedText: adjustedCaption.wrappedText, fontSize: adjustedCaption.fontSize } : { wrappedText: slide.caption, fontSize: settings.caption.fontSize },
         adjustedFooter: adjustedFooter ? { wrappedText: adjustedFooter.wrappedText, fontSize: adjustedFooter.fontSize } : undefined,
         isLoading: false,
       });
@@ -94,18 +88,12 @@ export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: 
       });
       updateSlide(slide.id, { isLoading: false });
     }
-  }, [slide, debouncedHeadline, debouncedCaption, debouncedFooter, settings, updateSlide, toast]);
-
-  // Effect for automatic adjustment on text change (debounced)
-  useEffect(() => {
-    // We only run auto-adjust for manual triggers now.
-    // The debounced text change effect is removed to prevent excessive API calls.
-  }, [debouncedHeadline, debouncedCaption, debouncedFooter]);
+  }, [slide.id, slide.headline, slide.caption, slide.footer, settings, updateSlide, toast]);
 
   // Effect for manual adjustment trigger
   useEffect(() => {
     if (adjustmentNonce > 0) {
-      runAutoAdjust(true);
+      runAutoAdjust();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adjustmentNonce]);
