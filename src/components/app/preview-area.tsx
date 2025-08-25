@@ -13,9 +13,10 @@ interface PreviewAreaProps {
   slides: Slide[];
   settings: Settings;
   updateSlide: (id: string, updatedProps: Partial<Slide>) => void;
+  adjustmentNonce: number;
 }
 
-export function PreviewArea({ slides, settings, updateSlide }: PreviewAreaProps) {
+export function PreviewArea({ slides, settings, updateSlide, adjustmentNonce }: PreviewAreaProps) {
   const { toast } = useToast();
 
   const handleDownloadAll = async () => {
@@ -51,6 +52,7 @@ export function PreviewArea({ slides, settings, updateSlide }: PreviewAreaProps)
                 slide={slide}
                 settings={settings}
                 updateSlide={updateSlide}
+                adjustmentNonce={adjustmentNonce}
               />
             ))}
           </div>
@@ -59,3 +61,5 @@ export function PreviewArea({ slides, settings, updateSlide }: PreviewAreaProps)
     </Card>
   );
 }
+
+    

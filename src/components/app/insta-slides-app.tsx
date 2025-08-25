@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import type { Settings, Slide } from '@/types';
 import { EditorPanel } from './editor-panel';
 import { PreviewArea } from './preview-area';
@@ -52,8 +52,19 @@ export function InstaSlidesApp() {
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [bulkText, setBulkText] = useState(initialBulkText);
   const [isClient, setIsClient] = useState(false);
+  const [isAdjustingAll, setIsAdjustingAll] = useState(false);
+  const [adjustmentNonce, setAdjustmentNonce] = useState(0);
 
   const parseBulkText = useCallback((text: string): Slide[] => {
+    if (!text.trim()) {
+        return [{
+            id: `slide-${Date.now()}-0`,
+            headline: 'Your headline goes here',
+            caption: 'And your caption follows below. You can customize everything on the left!',
+            footer: 'Source: Your name',
+            isLoading: false,
+          }];
+    }
     const slideBlocks = text.split(/\n\s*\n/);
     return slideBlocks.map((block, index) => {
       const lines = block.trim().split('\n');
@@ -76,7 +87,7 @@ export function InstaSlidesApp() {
   useEffect(() => {
     setIsClient(true);
     setSlides(parseBulkText(initialBulkText));
-  }, [parseBulkText]);
+  }, [parseBulkText, initialBulkText]);
 
 
   const regenerateSlides = useCallback(() => {
@@ -114,6 +125,16 @@ export function InstaSlidesApp() {
     updateSlide(id, { [part]: text });
   }, [updateSlide]);
   
+  const triggerAllSlidesAdjustment = useCallback(async () => {
+    setIsAdjustingAll(true);
+    setAdjustmentNonce(n => n + 1);
+    // A timeout to allow all slides to receive the nonce update before completion
+    setTimeout(() => {
+       setIsAdjustingAll(false);
+    }, slides.length * 100);
+  }, [slides.length]);
+
+
   if (!isClient) {
     return null; // Or a loading spinner
   }
@@ -160,6 +181,8 @@ export function InstaSlidesApp() {
             removeSlide={removeSlide}
             updateSlideText={updateSlideText}
             setSettings={setSettings}
+            triggerAllSlidesAdjustment={triggerAllSlidesAdjustment}
+            isAdjustingAll={isAdjustingAll}
           />
         </div>
         <div className="md:col-span-8 lg:col-span-9 h-full overflow-hidden">
@@ -167,9 +190,12 @@ export function InstaSlidesApp() {
             slides={slides}
             settings={settings}
             updateSlide={updateSlide}
+            adjustmentNonce={adjustmentNonce}
           />
         </div>
       </div>
     </div>
   );
 }
+
+    

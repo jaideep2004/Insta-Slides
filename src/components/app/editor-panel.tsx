@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, SlidersHorizontal } from 'lucide-react';
+import { PlusCircle, Trash2, SlidersHorizontal, Sparkles, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -26,6 +26,8 @@ interface EditorPanelProps {
   removeSlide: (id: string) => void;
   updateSlideText: (id: string, part: 'headline' | 'caption' | 'footer', text: string) => void;
   setSettings: (settings: Settings | ((s: Settings) => Settings)) => void;
+  triggerAllSlidesAdjustment: () => Promise<void>;
+  isAdjustingAll: boolean;
 }
 
 const fonts = ['Poppins', 'PT Sans', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald'];
@@ -38,6 +40,8 @@ export function EditorPanel({
   removeSlide,
   updateSlideText,
   setSettings,
+  triggerAllSlidesAdjustment,
+  isAdjustingAll
 }: EditorPanelProps) {
   const handleSettingsChange = React.useCallback(
     <T extends keyof Settings, K extends keyof Settings[T]>(
@@ -76,9 +80,24 @@ export function EditorPanel({
   return (
     <Card className="h-full flex flex-col">
        <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <SlidersHorizontal className="h-5 w-5" />
-          Customize
+        <CardTitle className="flex items-center justify-between text-lg">
+           <div className='flex items-center gap-2'>
+             <SlidersHorizontal className="h-5 w-5" />
+             Customize
+           </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={triggerAllSlidesAdjustment}
+              disabled={isAdjustingAll}
+            >
+              {isAdjustingAll ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Auto-Adjust All
+            </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 flex-grow">
@@ -289,3 +308,5 @@ export function EditorPanel({
     </Card>
   );
 }
+
+    

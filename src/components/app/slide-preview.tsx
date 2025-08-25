@@ -15,19 +15,19 @@ interface SlidePreviewProps {
   slide: Slide;
   settings: Settings;
   updateSlide: (id: string, updatedProps: Partial<Slide>) => void;
+  adjustmentNonce: number;
 }
 
-export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps) {
+export function SlidePreview({ slide, settings, updateSlide, adjustmentNonce }: SlidePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  const debouncedHeadline = useDebounce(slide.headline, 1000);
-  const debouncedCaption = useDebounce(slide.caption, 1000);
-  const debouncedFooter = useDebounce(slide.footer, 1000);
-  const debouncedSettings = useDebounce(settings, 1000);
-
-  const runAutoAdjust = useCallback(async () => {
-    if ((!debouncedHeadline && !debouncedCaption && !debouncedFooter) || !previewRef.current) {
+  const debouncedHeadline = useDebounce(slide.headline, 500);
+  const debouncedCaption = useDebounce(slide.caption, 500);
+  const debouncedFooter = useDebounce(slide.footer, 500);
+  
+  const runAutoAdjust = useCallback(async (isManualTrigger: boolean = false) => {
+    if ((!slide.headline && !slide.caption && !slide.footer) || !previewRef.current) {
         updateSlide(slide.id, {
         adjustedHeadline: undefined,
         adjustedCaption: undefined,
@@ -41,9 +41,11 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
 
     try {
       const promises = [];
-      if (debouncedHeadline) {
+      const currentText = isManualTrigger ? slide : { headline: debouncedHeadline, caption: debouncedCaption, footer: debouncedFooter };
+
+      if (currentText.headline) {
         promises.push(autoAdjustText({
-          text: debouncedHeadline,
+          text: currentText.headline,
           imageWidth: settings.dimension.width * 0.9,
           imageHeight: settings.dimension.height * 0.4,
           font: settings.headline.font,
@@ -52,9 +54,9 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
         promises.push(Promise.resolve(undefined));
       }
 
-      if (debouncedCaption) {
+      if (currentText.caption) {
         promises.push(autoAdjustText({
-          text: debouncedCaption,
+          text: currentText.caption,
           imageWidth: settings.dimension.width * 0.9,
           imageHeight: settings.dimension.height * 0.3,
           font: settings.caption.font,
@@ -63,9 +65,9 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
          promises.push(Promise.resolve(undefined));
       }
       
-      if (debouncedFooter) {
+      if (currentText.footer) {
         promises.push(autoAdjustText({
-            text: debouncedFooter || '',
+            text: currentText.footer || '',
             imageWidth: settings.dimension.width * 0.9,
             imageHeight: settings.dimension.height * 0.1,
             font: settings.footer.font,
@@ -92,11 +94,20 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
       });
       updateSlide(slide.id, { isLoading: false });
     }
-  }, [debouncedHeadline, debouncedCaption, debouncedFooter, debouncedSettings, slide.id, updateSlide, toast, settings.dimension, settings.headline.font, settings.caption.font, settings.footer.font]);
+  }, [slide, debouncedHeadline, debouncedCaption, debouncedFooter, settings, updateSlide, toast]);
 
+  // Effect for automatic adjustment on text change (debounced)
   useEffect(() => {
     runAutoAdjust();
-  }, [runAutoAdjust]);
+  }, [debouncedHeadline, debouncedCaption, debouncedFooter]);
+
+  // Effect for manual adjustment trigger
+  useEffect(() => {
+    if (adjustmentNonce > 0) {
+      runAutoAdjust(true);
+    }
+  }, [adjustmentNonce, runAutoAdjust]);
+
 
   const handleDownload = () => {
     toast({
@@ -196,3 +207,5 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
     </Card>
   );
 }
+
+    
