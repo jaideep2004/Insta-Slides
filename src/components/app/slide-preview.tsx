@@ -21,10 +21,10 @@ export function SlidePreview({ slide, settings, updateSlide }: SlidePreviewProps
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  const debouncedHeadline = useDebounce(slide.headline, 500);
-  const debouncedCaption = useDebounce(slide.caption, 500);
-  const debouncedFooter = useDebounce(slide.footer, 500);
-  const debouncedSettings = useDebounce(settings, 500);
+  const debouncedHeadline = useDebounce(slide.headline, 1000);
+  const debouncedCaption = useDebounce(slide.caption, 1000);
+  const debouncedFooter = useDebounce(slide.footer, 1000);
+  const debouncedSettings = useDebounce(settings, 1000);
 
   const runAutoAdjust = useCallback(async () => {
     if ((!debouncedHeadline && !debouncedCaption && !debouncedFooter) || !previewRef.current) {

@@ -7,13 +7,16 @@ export function useDebounce<T>(value: T, delay: number): T {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedValue(value);
+      // Only update if the value has actually changed
+      if (JSON.stringify(debouncedValue) !== JSON.stringify(value)) {
+        setDebouncedValue(value);
+      }
     }, delay);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [value, delay]);
+  }, [value, delay, debouncedValue]);
 
   return debouncedValue;
 }
